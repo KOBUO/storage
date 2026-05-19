@@ -1,4 +1,4 @@
-# gitlab-ci-common
+# pipeline-template
 
 管理業務DX向けの GitLab CI パイプラインテンプレートです。
 
@@ -79,7 +79,7 @@ stages:
   - ecr-push
 
 variables:
-  APP_DIR: "frontend"
+  APP_DIR: "."
   ECR_REPOSITORY: my-app
   SONAR_PROJECT_KEY: my-app
 ```
@@ -245,10 +245,9 @@ Push されるイメージは以下の形式です。
 
 ```
 ${ECR_REGISTRY}/${ECR_REPOSITORY}:${CI_COMMIT_TAG}
-${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
 ```
 
-`ECR_REGISTRY` は `AWS_ACCESS_KEY_ID` をもとに AWS アカウント ID から自動導出されます。
+`ECR_REGISTRY` は `AWS_ACCOUNT_ID` と `AWS_REGION` から自動導出されます。
 
 ---
 
@@ -279,13 +278,21 @@ variables:
 
 タグを作成すると `java-nexus-publish` または `react-nexus-publish` が実行されます。
 
-**Java**: `build.gradle` に `publishing{}` ブロックが必要です。
+**Java**: `build.gradle.kts` に `publishing{}` ブロックが必要です。
 
 ```kotlin
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
+            versionMapping {
+                usage("java-api") {
+                    fromResolutionOf("runtimeClasspath")
+                }
+                usage("java-runtime") {
+                    fromResolutionResult()
+                }
+            }
         }
     }
     repositories {
