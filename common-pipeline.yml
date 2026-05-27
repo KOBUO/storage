@@ -1,0 +1,87 @@
+variables:
+  APP_DIR: "."
+  DOCKER_REGISTRY: "${BS72_DOCKER_PROXY_REGISTRY}"
+  NEXUS_USER: "${BS72_NEXUS_USER}"
+  NEXUS_PASSWORD: "${BS72_NEXUS_PASSWORD}"
+  MAVEN_REPO_URL: "https://bs72-repo.devops.aslead.cloud/repository/maven-central"
+  MAVEN_PUBLISH_URL: "${BS72_MAVEN_RELEASE_URL}"
+  NPM_REGISTRY_URL: "https://bs72-repo.devops.aslead.cloud/repository/npm-central"
+  NPM_PUBLISH_URL: "${BS72_NPM_HOSTED_RELEASE_URL}"
+  SONAR_HOST_URL: "https://bs72-sonar.devops.aslead.cloud"
+  DOCKERFILE_PATH: ""
+
+.docker-base:
+  image: ${DOCKER_REGISTRY}/docker:29-cli
+  services:
+    - name: ${DOCKER_REGISTRY}/docker:29-dind
+      alias: docker
+      command: [ "--host=tcp://0.0.0.0:2375", "--tls=false" ]
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: "overlay2"
+    DOCKER_BUILDKIT: "1"
+  tags:
+    - lpj-runner
+
+.docker-build-base:
+  extends: .docker-base
+  stage: docker-build
+  before_script:
+    - unset HTTP_PROXY
+    - unset HTTPS_PROXY
+    - unset http_proxy
+    - unset https_proxy
+    - echo "${NEXUS_PASSWORD}" | docker login -u "${NEXUS_USER}" --password-stdin "${DOCKER_REGISTRY}"
+    - mkdir -p /tmp/dockerfile/java /tmp/dockerfile/react
+    - |
+      cat > /tmp/dockerfile/java/Dockerfile << 'EOF'
+      ARG DOCKER_REGISTRY=""
+      FROM ${DOCKER_REGISTRY}amazoncorretto:25-alpine
+      WORKDIR /app
+      RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+      USER appuser
+      COPY build/libs/*.jar app.jar
+      EXPOSE 8080
+      ENTRYPOINT ["java", "-jar", "app.jar"]
+      EOF
+    - |
+      cat > /tmp/dockerfile/react/Dockerfile << 'EOF'
+      ARG DOCKER_REGISTRY=""
+      FROM ${DOCKER_REGISTRY}nginx:1.30.1-alpine
+      COPY dist/ /usr/share/nginx/html
+      COPY nginx.conf /etc/nginx/conf.d/default.conf
+      EXPOSE 80
+      CMD ["nginx", "-g", "daemon off;"]
+      EOF
+  script:
+    - |
+      RESOLVED_DOCKERFILE="${DOCKERFILE_PATH:-/tmp/dockerfile/${DOCKERFILE}}"
+      docker build \
+        --build-arg DOCKER_REGISTRY="${DOCKER_REGISTRY}/" \
+        -t "${CI_PROJECT_NAME}:${CI_COMMIT_SHORT_SHA}" \
+        -f "${RESOLVED_DOCKERFILE}" \
+        "${APP_DIR}"
+
+.ecr-push-base:
+  extends: .docker-build-base
+  stage: ecr-push
+  script:
+    - |
+      export ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+      ECR_PASSWORD=$(docker run --rm \
+        -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+        -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+        "${DOCKER_REGISTRY}/amazon/aws-cli:2.34.45" \
+        ecr get-login-password --region "${AWS_REGION}")
+      echo "${ECR_PASSWORD}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+    - |
+      RESOLVED_DOCKERFILE="${DOCKERFILE_PATH:-/tmp/dockerfile/${DOCKERFILE}}"
+      docker build \
+        --build-arg DOCKER_REGISTRY="${DOCKER_REGISTRY}/" \
+        -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${CI_COMMIT_TAG}" \
+        -f "${RESOLVED_DOCKERFILE}" \
+        "${APP_DIR}"
+    - docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${CI_COMMIT_TAG}"
+  rules:
+    - if: $CI_COMMIT_TAG
