@@ -1,29 +1,41 @@
-# GitLab CI/CD 共通パイプラインテンプレート
+# pipeline-template
 
-Java / React プロジェクトで利用する GitLab CI/CD の共通パイプラインテンプレートです。
+LPJ向けの GitLab CI パイプラインテンプレートです。
 
-各プロジェクトの `.gitlab-ci.yml` から本テンプレートを `include` することで、ビルド、テスト、SonarQube 解析、Docker Build、ECR Push、Nexus Publish の定義を共通化できます。
+Java / React プロジェクト向けに、ビルド・テスト・カバレッジ取得・SonarQube 解析・Docker Build・ECR Push・Nexus Publish などの CI/CD 処理を共通化することを目的としています。
+
+各プロジェクトでは、本リポジトリのテンプレートを `include` して利用します。
+
+主に以下を共通化します。
+
+- Gradle build / test / coverage（JaCoCo）
+- React build / test / coverage（Vitest）
+- SonarQube 解析
+- Docker build
+- ECR Push
+- Nexus Maven / npm Publish
+- Git タグ未尾の `-snapshot` による Snapshot / Release publish 先の自動切り替え
 
 ---
 
-## テンプレート構成
-
-```text
-templates/
-├── common-pipeline.yml
-├── java-pipeline.yml
-└── react-pipeline.yml
-```
+## ファイル構成
 
 | ファイル | 内容 |
 |---|---|
-| `templates/common-pipeline.yml` | Java / React 共通処理、タグ解析、Docker / DinD、Docker Build、ECR Push 共通処理 |
-| `templates/java-pipeline.yml` | Java / Gradle 向け build、test、sonar、Nexus Publish、Docker Build、ECR Push |
-| `templates/react-pipeline.yml` | React / pnpm 向け build、test、sonar、Nexus Publish、Docker Build、ECR Push |
+| `templates/common-pipeline.yml` | Docker / DinD / Docker build / ECR Push などの共通定義 |
+| `templates/java-pipeline.yml` | Java / Gradle 向け build / test / sonar / Nexus publish / ECR push 定義 |
+| `templates/react-pipeline.yml` | React / pnpm 向け build / test / sonar / Nexus publish / ECR push 定義 |
 
 ---
 
-## 利用方法
+## 利用イメージ
+
+### アプリ開発（ECR Push）
+
+ビルド・テスト・SonarQube 解析・Docker Build・ECR Push を行う場合のイメージです。
+
+タグ作成時に ECR へイメージが Push されます。
+
 
 ### Java プロジェクト
 
