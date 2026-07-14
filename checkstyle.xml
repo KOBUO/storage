@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+  コーディングスタイル統一のための checkstyle 設定
+  （レイアウト・import・命名・品質系の標準チェック）。
+  レイアウト規則は 4スペース・K&R・折返し120。VS Code の redhat.java フォーマッタの
+  既定出力と矛盾しない（整形済みコードがこのチェックに落ちることはない）。
+-->
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="error"/>
+    <property name="fileExtensions" value="java"/>
+
+    <module name="NewlineAtEndOfFile"/>                 <!-- ファイル末尾に改行があること -->
+
+    <module name="FileTabCharacter">                    <!-- タブ文字の禁止（インデントは4スペース） -->
+        <property name="eachLine" value="true"/>
+    </module>
+
+    <module name="LineLength">                          <!-- 1行の長さは120桁まで -->
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package.*|^import.*|href\s*=|https?://"/>
+    </module>
+
+    <module name="RegexpSingleline">                    <!-- 行末の空白の禁止 -->
+        <property name="format" value="\s+$"/>
+        <property name="message" value="行末に空白があります"/>
+    </module>
+
+    <module name="TreeWalker">
+
+        <!-- ===== インデント・ブレース ===== -->
+        <module name="Indentation">                     <!-- インデント幅（基本4・配列初期化子の継続8） -->
+            <property name="basicOffset" value="4"/>
+            <property name="braceAdjustment" value="0"/>
+            <property name="caseIndent" value="4"/>
+            <property name="arrayInitIndent" value="8"/>
+            <property name="lineWrappingIndentation" value="4"/>
+            <property name="forceStrictCondition" value="false"/>
+        </module>
+        <module name="LeftCurly"/>                      <!-- 開きブレース { は行末に置く（K&R） -->
+        <module name="RightCurly"/>                     <!-- else/catch/finally は } と同じ行に置く -->
+
+        <!-- ===== 空白 ===== -->
+        <module name="WhitespaceAround">                <!-- 演算子・キーワードの前後に空白 -->
+            <property name="allowEmptyConstructors" value="true"/>
+            <property name="allowEmptyMethods" value="true"/>
+            <property name="allowEmptyTypes" value="true"/>
+            <property name="allowEmptyLambdas" value="true"/>
+        </module>
+        <module name="WhitespaceAfter"/>                <!-- カンマ・セミコロンの後に空白 -->
+        <module name="NoWhitespaceBefore"/>             <!-- カンマ・セミコロンの前に空白を置かない -->
+        <module name="NoWhitespaceAfter"/>              <!-- 単項演算子・ドット等の後に空白を置かない -->
+        <module name="GenericWhitespace"/>              <!-- ジェネリクス &lt;&gt; まわりの空白ルール -->
+        <module name="ParenPad"/>                       <!-- ( ) の内側に空白を置かない -->
+        <module name="MethodParamPad"/>                 <!-- メソッド名と ( の間に空白を置かない -->
+        <module name="TypecastParenPad"/>               <!-- キャストの ( ) の内側に空白を置かない -->
+        <module name="SingleSpaceSeparator"/>           <!-- 連続する空白（手動アライン）の禁止 -->
+
+        <!-- ===== import ===== -->
+        <module name="AvoidStarImport"/>                <!-- ワイルドカード import（*）の禁止 -->
+        <module name="RedundantImport"/>                <!-- 重複・同一パッケージ・java.lang の import 禁止 -->
+        <module name="UnusedImports"/>                  <!-- 未使用 import の禁止 -->
+
+        <!-- ===== 命名 ===== -->
+        <module name="PackageName"/>                    <!-- パッケージ名は小文字 -->
+        <module name="TypeName"/>                       <!-- クラス/インターフェース名は UpperCamelCase -->
+        <module name="ConstantName"/>                   <!-- 定数（static final）は UPPER_SNAKE_CASE -->
+        <module name="MemberName"/>                     <!-- フィールド名は lowerCamelCase -->
+        <module name="MethodName"/>                     <!-- メソッド名は lowerCamelCase -->
+        <module name="ParameterName"/>                  <!-- 引数名は lowerCamelCase -->
+        <module name="LocalVariableName"/>              <!-- ローカル変数名は lowerCamelCase -->
+        <module name="LocalFinalVariableName"/>         <!-- final ローカル変数名は lowerCamelCase -->
+
+        <!-- ===== 品質系（バグの温床になりやすいコード） ===== -->
+        <module name="EqualsHashCode"/>                 <!-- equals/hashCode は必ずセットでオーバーライド -->
+        <module name="StringLiteralEquality"/>          <!-- 文字列の == / != 比較の禁止（equals を使う） -->
+        <module name="EmptyStatement"/>                 <!-- 空文（; だけの文）の禁止 -->
+        <module name="EmptyBlock">                      <!-- 空ブロックの禁止（コメントがあれば許容） -->
+            <property name="option" value="text"/>
+        </module>
+        <module name="FallThrough"/>                    <!-- switch の暗黙フォールスルー禁止 -->
+        <module name="MissingSwitchDefault"/>           <!-- switch には default を必須にする -->
+        <module name="SimplifyBooleanExpression"/>      <!-- 冗長な boolean 式の禁止（== true 等） -->
+        <module name="SimplifyBooleanReturn"/>          <!-- 冗長な boolean return の禁止（if文でtrue/false返し） -->
+        <module name="NeedBraces"/>                     <!-- if/for/while/do は必ずブレースを付ける -->
+        <module name="OneStatementPerLine"/>            <!-- 1行に書ける文は1つまで -->
+        <module name="MultipleVariableDeclarations"/>   <!-- 1文での複数変数宣言の禁止（int a, b;） -->
+
+        <!-- ===== ファイル構成・その他 ===== -->
+        <module name="OuterTypeFilename"/>              <!-- 公開型名とファイル名の一致 -->
+        <module name="OneTopLevelClass"/>               <!-- 1ファイルにトップレベルクラスは1つ -->
+        <module name="ModifierOrder"/>                  <!-- 修飾子は Java 標準の順序（public static final 等） -->
+        <module name="ArrayTypeStyle"/>                 <!-- 配列は String[] args 形式（String args[] は禁止） -->
+        <module name="UpperEll"/>                       <!-- long リテラルは大文字 L（小文字 l は 1 と紛らわしい） -->
+    </module>
+</module>
